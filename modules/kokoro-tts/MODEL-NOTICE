@@ -1,0 +1,11 @@
+Kokoro-82M read-aloud model (downloaded on first use, not shipped in the app)
+
+Model: Kokoro-82M v1.0 by hexgrad, https://huggingface.co/hexgrad/Kokoro-82M, Apache License 2.0.
+Core ML conversion: FluidInference/kokoro-82m-coreml, https://huggingface.co/FluidInference/kokoro-82m-coreml,
+Apache License 2.0, pinned at revisions 006395f65025af251858b1ab0a7178a6a1e73f9f (ANE/) and
+6c0750dd02ef9d981fb82f147d784a3f171755ee (ANE-v3/, G2P, lexicon). The ANE-v3 generator adapts
+mattmireles/kokoro-coreml (Apache License 2.0).
+English lexicon: Misaki (hexgrad/misaki), Apache License 2.0.
+Letter-to-sound model for words outside the lexicon: PeterReid/graphemes_to_phonemes_en_us, Apache License 2.0,
+converted to Core ML by FluidInference.
+Runtime code: FluidInference/FluidAudio v0.18.2, Apache License 2.0 (ios/FluidKokoro/).

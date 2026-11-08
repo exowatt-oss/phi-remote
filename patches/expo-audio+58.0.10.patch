@@ -1,0 +1,81 @@
+diff --git a/node_modules/expo-audio/build/Audio.types.d.ts b/node_modules/expo-audio/build/Audio.types.d.ts
+index 332b0c2..f4cb786 100644
+--- a/node_modules/expo-audio/build/Audio.types.d.ts
++++ b/node_modules/expo-audio/build/Audio.types.d.ts
+@@ -621,6 +621,14 @@ export type AudioMode = {
+      * @platform android
+      */
+     allowsBackgroundRecording?: boolean;
++    /**
++     * phi remote patch: whether a recording session may use a Bluetooth headset's microphone (HFP).
++     * `false` keeps the input on the device and lets output stay on Bluetooth headphones (A2DP).
++     *
++     * @default true
++     * @platform ios
++     */
++    allowsBluetoothHFP?: boolean;
+ };
+ /**
+  * Audio interruption behavior modes.
+diff --git a/node_modules/expo-audio/ios/AudioModule.swift b/node_modules/expo-audio/ios/AudioModule.swift
+index 42ce9e8..df7cae8 100644
+--- a/node_modules/expo-audio/ios/AudioModule.swift
++++ b/node_modules/expo-audio/ios/AudioModule.swift
+@@ -892,11 +892,16 @@ public class AudioModule: Module {
+         if !mode.shouldRouteThroughEarpiece {
+           categoryOptions.insert(.defaultToSpeaker)
+         }
++        if mode.allowsBluetoothHFP {
+ #if compiler(>=6.2) // Xcode 26
+-        categoryOptions.insert(.allowBluetoothHFP)
++          categoryOptions.insert(.allowBluetoothHFP)
+ #else
+-        categoryOptions.insert(.allowBluetooth)
++          categoryOptions.insert(.allowBluetooth)
+ #endif
++        } else {
++          // phi remote: HFP would move the input to the headset's mic and the headphones to call audio.
++          categoryOptions.insert(.allowBluetoothA2DP)
++        }
+       }
+ #endif
+ 
+diff --git a/node_modules/expo-audio/ios/AudioRecorder.swift b/node_modules/expo-audio/ios/AudioRecorder.swift
+index 198fe6d..5b39611 100644
+--- a/node_modules/expo-audio/ios/AudioRecorder.swift
++++ b/node_modules/expo-audio/ios/AudioRecorder.swift
+@@ -285,16 +285,16 @@ class AudioRecorder: SharedRef<AVAudioRecorder>, RecordingResultHandler {
+   }
+ 
+   func didFinish(_ recorder: AVAudioRecorder, successfully flag: Bool) {
+-    // Update internal state when recording finishes automatically (e.g., from recordForDuration)
+-    currentState = .stopped
++    // Update internal state when AVAudioRecorder finishes or fails.
++    currentState = flag ? .stopped : .error
+     resetDurationTracking()
+     durationLimitSeconds = nil
+ 
+     emit(event: recordingStatus, payload: [
+       "id": id,
+       "isFinished": true,
+-      "hasError": false,
+-      "error": nil,
++      "hasError": !flag,
++      "error": flag ? nil : "Recording failed",
+       "url": recorder.url.absoluteString
+     ])
+   }
+diff --git a/node_modules/expo-audio/ios/AudioRecords.swift b/node_modules/expo-audio/ios/AudioRecords.swift
+index 7b8b421..f4672f4 100644
+--- a/node_modules/expo-audio/ios/AudioRecords.swift
++++ b/node_modules/expo-audio/ios/AudioRecords.swift
+@@ -7,6 +7,9 @@ struct AudioMode: Record {
+   @Field var shouldPlayInBackground: Bool = false
+   @Field var shouldRouteThroughEarpiece: Bool = false
+   @Field var allowsBackgroundRecording: Bool = false
++  // phi remote: false = recording never uses a Bluetooth headset's mic (HFP); the input stays on the
++  // device and output may stay on Bluetooth headphones in high quality (A2DP). true = upstream behaviour.
++  @Field var allowsBluetoothHFP: Bool = true
+ }
+ 
+ enum InterruptionMode: String, Enumerable {

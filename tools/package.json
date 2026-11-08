@@ -1,0 +1,18 @@
+{
+  "name": "phi-remote-tools",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "description": "Mock hub and protocol v1 conformance tester for phi remote",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "mock-hub": "node mock-hub/server.mjs",
+    "conformance": "node conformance/run.mjs",
+    "check": "node --check mock-hub/server.mjs && node --check mock-hub/sessions.mjs && node --check mock-hub/content.mjs && node --check conformance/run.mjs && node --check conformance/validators.mjs"
+  },
+  "dependencies": {
+    "qrcode-terminal": "^0.12.0",
+    "ws": "^8.18.0"
+  }
+}
